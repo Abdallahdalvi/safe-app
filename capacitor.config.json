@@ -4,6 +4,14 @@
   "webDir": "www",
   "server": {
     "url": "https://safe.dalvi.cloud/",
-    "allowNavigation": ["safe.dalvi.cloud"]
+    "allowNavigation": [
+      "safe.dalvi.cloud"
+    ]
+  },
+  "plugins": {
+    "StatusBar": {
+      "backgroundColor": "#005e96",
+      "style": "LIGHT"
+    }
   }
 }
