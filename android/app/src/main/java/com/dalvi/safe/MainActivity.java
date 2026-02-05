@@ -1,6 +1,7 @@
 package com.dalvi.safe;
 
 import android.os.Bundle;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -9,7 +10,6 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Explicitly set the content view to use our custom activity_main layout
         setContentView(R.layout.activity_main);
     }
 
@@ -17,11 +17,16 @@ public class MainActivity extends BridgeActivity {
     public void onStart() {
         super.onStart();
         
-        // Find the WebView and Bottom Navigation from the layout
-        // Note: Capacitor initializes the bridge which sets up the WebView.
-        // We ensure we are interacting with the one in our layout.
         WebView webView = findViewById(R.id.webview);
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+
+        if (webView != null) {
+            // Fix "Browser not supported" error by setting a modern User Agent
+            WebSettings settings = webView.getSettings();
+            String originalUserAgent = settings.getUserAgentString();
+            // Append a standard Chrome/Safari string to trick Nextcloud Talk into supporting the WebView
+            settings.setUserAgentString(originalUserAgent + " Mobile Safari/537.36 (SafeApp; Android)");
+        }
 
         if (bottomNav != null && webView != null) {
             bottomNav.setOnItemSelectedListener(item -> {
