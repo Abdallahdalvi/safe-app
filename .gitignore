@@ -1,0 +1,9 @@
+node_modules/
+www/
+android/app/build/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+capacitor.config.json.bak
+*.log
+webtoapk.html
+build-my-apk.bat
