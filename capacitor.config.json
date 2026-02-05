@@ -1,0 +1,9 @@
+{
+  "appId": "com.dalvi.safe",
+  "appName": "Safe App",
+  "webDir": "www",
+  "server": {
+    "url": "https://safe.dalvi.cloud/",
+    "allowNavigation": ["safe.dalvi.cloud"]
+  }
+}
