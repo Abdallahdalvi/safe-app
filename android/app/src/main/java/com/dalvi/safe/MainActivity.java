@@ -86,7 +86,9 @@ public class MainActivity extends BridgeActivity {
         }
 
         // Configure primary WebView (Home)
-        configureWebView(primaryWebView);
+        if (primaryWebView != null) {
+            configureWebView(primaryWebView);
+        }
 
         // PRE-LOAD Talk tab in background to ensure call polling starts immediately
         preLoadTab(R.id.navigation_talk);
@@ -97,6 +99,18 @@ public class MainActivity extends BridgeActivity {
             startForegroundService(serviceIntent);
         } else {
             startService(serviceIntent);
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (intent != null && intent.getBooleanExtra("SWITCH_TO_TALK", false)) {
+            switchTab(R.id.navigation_talk);
+            BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+            if (bottomNav != null) {
+                bottomNav.setSelectedItemId(R.id.navigation_talk);
+            }
         }
     }
 
@@ -158,6 +172,8 @@ public class MainActivity extends BridgeActivity {
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setUserAgentString(userAgent);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        webView.setNetworkAvailable(true);
         
         // Add native bridge
         webView.addJavascriptInterface(new WebAppInterface(this), "AndroidBridge");
@@ -217,14 +233,21 @@ public class MainActivity extends BridgeActivity {
     }
 
     private static class WebAppInterface {
-        private android.content.Context mContext;
+        private java.lang.ref.WeakReference<android.content.Context> mContext;
         WebAppInterface(android.content.Context c) {
-            mContext = c;
+            mContext = new java.lang.ref.WeakReference<>(c);
+        }
+
+        private android.content.Context getContext() {
+            return mContext.get();
         }
 
         @android.webkit.JavascriptInterface
         public void showNotification(String title, String body) {
-            NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(MainActivity.NOTIFICATION_SERVICE);
+            android.content.Context context = getContext();
+            if (context == null) return;
+            
+            NotificationManager notificationManager = (NotificationManager) context.getSystemService(MainActivity.NOTIFICATION_SERVICE);
             String channelId = "SafeAppWebNotifications";
             String groupKey = "com.dalvi.safe.MESSAGES_" + title.replaceAll("[^a-zA-Z0-9]", "");
             
@@ -238,7 +261,7 @@ public class MainActivity extends BridgeActivity {
                             body.toLowerCase().contains("talk with you") ||
                             body.toLowerCase().contains("invite");
 
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext, channelId)
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
                     .setContentTitle(title)
                     .setContentText(body)
                     .setSmallIcon(R.mipmap.ic_launcher)
@@ -248,25 +271,23 @@ public class MainActivity extends BridgeActivity {
                     .setGroup(groupKey);
 
             if (isCall) {
-                Intent fullScreenIntent = new Intent(mContext, IncomingCallActivity.class);
+                Intent fullScreenIntent = new Intent(context, IncomingCallActivity.class);
                 fullScreenIntent.putExtra("CALLER_NAME", body.replace(" would like to talk with you", ""));
                 fullScreenIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 
-                PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(mContext, 0,
+                PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(context, 0,
                         fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
                 
                 builder.setFullScreenIntent(fullScreenPendingIntent, true)
                        .setOngoing(true);
                        
-                mContext.startActivity(fullScreenIntent);
+                context.startActivity(fullScreenIntent);
             }
 
-            // Use a stable ID for the same user/title to trigger grouping/updates correctly
             int notificationId = Math.abs(title.hashCode());
             notificationManager.notify(notificationId, builder.build());
             
-            // Send a Summary notification for the group to ensure proper collapsing
-            Notification summaryNotification = new NotificationCompat.Builder(mContext, channelId)
+            Notification summaryNotification = new NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setGroup(groupKey)
                     .setGroupSummary(true)

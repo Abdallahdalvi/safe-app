@@ -35,12 +35,14 @@ public class IncomingCallActivity extends Activity {
     }
     
     private void answerCall() {
-        // Logic to communicate back to WebView to answer
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra("SWITCH_TO_TALK", true);
+        startActivity(intent);
         finish();
     }
     
     private void declineCall() {
-        // Logic to communicate back to WebView to decline
         finish();
     }
 }
