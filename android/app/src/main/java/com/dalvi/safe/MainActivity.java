@@ -115,12 +115,17 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        if (intent != null && intent.getBooleanExtra("SWITCH_TO_TALK", false)) {
-            switchTab(R.id.navigation_talk);
-            BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-            if (bottomNav != null) {
-                bottomNav.setSelectedItemId(R.id.navigation_talk);
+        if (intent != null) {
+            if (intent.getBooleanExtra("SWITCH_TO_TALK", false)) {
+                switchTab(R.id.navigation_talk);
+                BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+                if (bottomNav != null) {
+                    bottomNav.setSelectedItemId(R.id.navigation_talk);
+                }
             }
+            // Clear notifications when app is opened via one
+            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            notificationManager.cancelAll();
         }
     }
 
@@ -247,8 +252,10 @@ public class MainActivity extends BridgeActivity {
                     "  /* Specific CSS fixes for Nextcloud Talk PWA look */ " +
                     "  const style = document.createElement('style'); " +
                     "  style.innerHTML = ` " +
-                    "    .message .timestamp, .message .message-info { font-size: 0.75rem !important; transform-origin: left; } " +
+                    "    .message .timestamp, .message .message-info { font-size: 0.7rem !important; opacity: 0.6; position: absolute; right: 8px; bottom: 4px; line-height: 1 !important; height: auto !important; margin: 0 !important; padding: 0 !important; } " +
                     "    .message-row .timestamp { font-size: 10px !important; } " +
+                    "    .message .message-content { padding-right: 50px !important; min-height: 2.5em; } " +
+                    "    .message .message-info .status-icon { width: 12px !important; height: 12px !important; margin-left: 4px !important; } " +
                     "    /* Ensure viewport is correct for PWA look */ " +
                     "    @viewport { width: device-width; } " +
                     "  `; " +
@@ -300,12 +307,21 @@ public class MainActivity extends BridgeActivity {
                     .setContentTitle(title)
                     .setContentText(body)
                     .setSmallIcon(R.mipmap.ic_launcher)
-                    .setPriority(NotificationCompat.PRIORITY_MAX) // MAX for Heads-Up
+                    .setPriority(NotificationCompat.PRIORITY_MAX) 
                     .setCategory(isCall ? NotificationCompat.CATEGORY_CALL : NotificationCompat.CATEGORY_MESSAGE)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setAutoCancel(true)
                     .setGroup(groupKey)
-                    .setDefaults(Notification.DEFAULT_ALL);
+                    .setDefaults(Notification.DEFAULT_ALL)
+                    .setVibrate(isCall ? new long[]{0, 500, 200, 500, 200, 500} : new long[]{0, 200});
+
+            // Default click intent to open app and switch to relevant tab
+            Intent clickIntent = new Intent(context, MainActivity.class);
+            clickIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            clickIntent.putExtra("SWITCH_TO_TALK", isCall); // Switch to talk for calls, home for messages
+            PendingIntent clickPendingIntent = PendingIntent.getActivity(context, (int)System.currentTimeMillis(), 
+                    clickIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            builder.setContentIntent(clickPendingIntent);
 
             if (isCall) {
                 // Answer Action
@@ -368,6 +384,13 @@ public class MainActivity extends BridgeActivity {
         WebView webView = webViews.get(currentTabId);
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
+        } else if (currentTabId != R.id.navigation_home) {
+            // If on another tab, go back to home tab instead of closing app
+            switchTab(R.id.navigation_home);
+            BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+            if (bottomNav != null) {
+                bottomNav.setSelectedItemId(R.id.navigation_home);
+            }
         } else {
             super.onBackPressed();
         }
