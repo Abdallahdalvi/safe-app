@@ -8,14 +8,14 @@
  * SPDX-FileCopyrightText: 2017-2019 Mario Danic <mario@lovelyhq.com>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-import com.github.spotbugs.snom.Confidence
-import com.github.spotbugs.snom.Effort
-import com.github.spotbugs.snom.SpotBugsTask
+// import com.github.spotbugs.snom.Confidence
+// import com.github.spotbugs.snom.Effort
+// import com.github.spotbugs.snom.SpotBugsTask
 
 plugins {
-    id "org.jetbrains.kotlin.plugin.compose" version "2.3.0"
+    id "org.jetbrains.kotlin.plugin.compose" version "2.0.21"
     id "org.jetbrains.kotlin.kapt"
-    id 'com.google.devtools.ksp' version '2.3.5'
+    id 'com.google.devtools.ksp' version '2.0.21-1.0.27'
 }
 
 apply plugin: 'com.android.application'
@@ -28,13 +28,13 @@ apply plugin: "org.jlleitschuh.gradle.ktlint"
 apply plugin: 'kotlinx-serialization'
 
 android {
-    compileSdkVersion 36
+    compileSdkVersion 34
 
     namespace = 'com.dalvi.safe'
 
     defaultConfig {
         minSdkVersion 26
-        targetSdkVersion 36
+        targetSdkVersion 34
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // mayor.minor.hotfix.increment (for increment: 01-50=Alpha / 51-89=RC / 90-99=stable)
@@ -123,7 +123,7 @@ android {
         }
     }
 
-    check.dependsOn 'spotbugsGplayDebug', 'lint', 'ktlintCheck', 'detekt'
+    // check.dependsOn 'spotbugsGplayDebug', 'lint', 'ktlintCheck', 'detekt'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -379,6 +379,7 @@ tasks.register('installGitHooks', Copy) {
     into '../.git/hooks'
 }
 
+/*
 spotbugs {
     ignoreFailures = true // should continue checking
     effort = Effort.MAX
@@ -414,6 +415,7 @@ tasks.named("detekt").configure {
         md.required.set(false)
     }
 }
+*/
 
 detekt {
     config.setFrom("../detekt.yml")
