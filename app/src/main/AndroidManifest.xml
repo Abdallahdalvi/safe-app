@@ -95,7 +95,7 @@
         android:theme="@style/AppTheme.Launcher"
         android:taskAffinity=""
         tools:ignore="UnusedAttribute"
-        tools:replace="label, icon, theme, name, allowBackup">
+        tools:replace="label, icon, theme, allowBackup">
 
         <meta-data
             android:name="com.google.android.gms.car.application"
