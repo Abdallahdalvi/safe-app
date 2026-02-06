@@ -177,22 +177,35 @@ public class MainActivity extends BridgeActivity {
                 notificationManager.createNotificationChannel(channel);
             }
 
-            Notification notification = new NotificationCompat.Builder(mContext, channelId)
+            boolean isCall = title.toLowerCase().contains("call") || 
+                            body.toLowerCase().contains("incoming call") || 
+                            body.toLowerCase().contains("talk with you") ||
+                            body.toLowerCase().contains("invite");
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext, channelId)
                     .setContentTitle(title)
                     .setContentText(body)
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .build();
+                    .setCategory(NotificationCompat.CATEGORY_CALL)
+                    .setAutoCancel(true);
 
-            notificationManager.notify((int) System.currentTimeMillis(), notification);
-            
-            // If it's a call, trigger the call UI
-            if (title.toLowerCase().contains("call") || body.toLowerCase().contains("incoming call")) {
-                Intent intent = new Intent(mContext, IncomingCallActivity.class);
-                intent.putExtra("CALLER_NAME", title);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                mContext.startActivity(intent);
+            if (isCall) {
+                Intent fullScreenIntent = new Intent(mContext, IncomingCallActivity.class);
+                fullScreenIntent.putExtra("CALLER_NAME", body.replace(" would like to talk with you", ""));
+                fullScreenIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                
+                PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(mContext, 0,
+                        fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                
+                builder.setFullScreenIntent(fullScreenPendingIntent, true)
+                       .setOngoing(true);
+                       
+                // Also start activity directly for reliability when app is foregrounded
+                mContext.startActivity(fullScreenIntent);
             }
+
+            notificationManager.notify((int) System.currentTimeMillis(), builder.build());
         }
     }
 
