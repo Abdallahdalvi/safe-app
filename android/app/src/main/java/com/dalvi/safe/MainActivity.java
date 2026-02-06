@@ -52,6 +52,15 @@ public class MainActivity extends BridgeActivity {
             });
         }
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
+
+        // Configure primary WebView
+        configureWebView(primaryWebView);
+
         // Start persistence service
         Intent serviceIntent = new Intent(this, AppKeepAliveService.class);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -103,6 +112,19 @@ public class MainActivity extends BridgeActivity {
         // Add native bridge
         webView.addJavascriptInterface(new WebAppInterface(this), "AndroidBridge");
         
+        webView.setWebChromeClient(new android.webkit.WebChromeClient() {
+            @Override
+            public void onPermissionRequest(final android.webkit.PermissionRequest request) {
+                request.grant(request.getResources());
+            }
+
+            @Override
+            public boolean onConsoleMessage(android.webkit.ConsoleMessage consoleMessage) {
+                android.util.Log.d("SafeAppJS", consoleMessage.message());
+                return true;
+            }
+        });
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
@@ -110,17 +132,21 @@ public class MainActivity extends BridgeActivity {
                 // Inject script to catch notifications and rings
                 view.evaluateJavascript(
                     "(function() { " +
+                    "  if (window.SafeAppBridgeInjected) return; " +
+                    "  console.log('SafeApp: Injecting Bridge...'); " +
                     "  const OriginalNotification = window.Notification; " +
                     "  window.Notification = function(title, options) { " +
+                    "    console.log('SafeApp: Notification caught:', title, options); " +
                     "    AndroidBridge.showNotification(title, options.body || ''); " +
                     "    return new OriginalNotification(title, options); " +
                     "  }; " +
+                    "  Object.assign(window.Notification, OriginalNotification); " +
                     "  window.Notification.permission = 'granted'; " +
                     "  window.Notification.requestPermission = function(cb) { " +
                     "    if(cb) cb('granted'); return Promise.resolve('granted'); " +
                     "  }; " +
-                    "  /* Catch Nextcloud Talk specific ring events if possible */ " +
-                    "  console.log('SafeApp: Bridge Injected'); " +
+                    "  window.SafeAppBridgeInjected = true; " +
+                    "  console.log('SafeApp: Bridge Injected Successfully'); " +
                     "})();", null);
             }
 
