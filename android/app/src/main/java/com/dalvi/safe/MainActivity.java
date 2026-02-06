@@ -9,6 +9,7 @@ import android.widget.FrameLayout;
 import com.getcapacitor.BridgeActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+public class MainActivity extends BridgeActivity {
     private java.util.Map<Integer, WebView> webViews = new java.util.HashMap<>();
     private int currentTabId = R.id.navigation_home;
     private String userAgent = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36";
