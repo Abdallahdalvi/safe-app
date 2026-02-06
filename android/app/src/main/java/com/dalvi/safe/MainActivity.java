@@ -44,6 +44,14 @@ public class MainActivity extends BridgeActivity {
                 return true;
             });
         }
+
+        // Start persistence service
+        Intent serviceIntent = new Intent(this, AppKeepAliveService.class);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent);
+        } else {
+            startService(serviceIntent);
+        }
     }
 
     private void switchTab(int id) {
@@ -85,7 +93,30 @@ public class MainActivity extends BridgeActivity {
         settings.setAllowFileAccess(true);
         settings.setUserAgentString(userAgent);
         
+        // Add native bridge
+        webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
+        
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                // Inject script to catch notifications and rings
+                view.evaluateJavascript(
+                    "(function() { " +
+                    "  const OriginalNotification = window.Notification; " +
+                    "  window.Notification = function(title, options) { " +
+                    "    AndroidBridge.showNotification(title, options.body || ''); " +
+                    "    return new OriginalNotification(title, options); " +
+                    "  }; " +
+                    "  window.Notification.permission = 'granted'; " +
+                    "  window.Notification.requestPermission = function(cb) { " +
+                    "    if(cb) cb('granted'); return Promise.resolve('granted'); " +
+                    "  }; " +
+                    "  /* Catch Nextcloud Talk specific ring events if possible */ " +
+                    "  console.log('SafeApp: Bridge Injected'); " +
+                    "})();", null);
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url.contains("safe.dalvi.cloud")) {
@@ -95,6 +126,36 @@ public class MainActivity extends BridgeActivity {
                 return false;
             }
         });
+    }
+
+    public class WebAppInterface {
+        @android.webkit.JavascriptInterface
+        public void showNotification(String title, String body) {
+            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            String channelId = "SafeAppWebNotifications";
+            
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                NotificationChannel channel = new NotificationChannel(channelId, "Web Notifications", NotificationManager.IMPORTANCE_HIGH);
+                notificationManager.createNotificationChannel(channel);
+            }
+
+            Notification notification = new NotificationCompat.Builder(MainActivity.this, channelId)
+                    .setContentTitle(title)
+                    .setContentText(body)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .build();
+
+            notificationManager.notify((int) System.currentTimeMillis(), notification);
+            
+            // If it's a call, trigger the call UI
+            if (title.toLowerCase().contains("call") || body.toLowerCase().contains("incoming call")) {
+                Intent intent = new Intent(MainActivity.this, IncomingCallActivity.class);
+                intent.putExtra("CALLER_NAME", title);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+        }
     }
 
     private String getUrlForId(int id) {
