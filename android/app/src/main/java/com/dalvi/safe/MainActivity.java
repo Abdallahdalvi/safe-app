@@ -1,11 +1,16 @@
 package com.dalvi.safe;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.ViewGroup;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import androidx.core.app.NotificationCompat;
 import com.getcapacitor.BridgeActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
