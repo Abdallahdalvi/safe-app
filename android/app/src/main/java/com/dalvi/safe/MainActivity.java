@@ -172,6 +172,11 @@ public class MainActivity extends BridgeActivity {
                     "  window.Notification.requestPermission = function(cb) { " +
                     "    if(cb) cb('granted'); return Promise.resolve('granted'); " +
                     "  }; " +
+                    "  /* Heartbeat to keep WebView from sleeping */ " +
+                    "  setInterval(function() { " +
+                    "    console.log('SafeApp: Heartbeat'); " +
+                    "    window.dispatchEvent(new Event('mousemove')); " +
+                    "  }, 5000); " +
                     "  window.SafeAppBridgeInjected = true; " +
                     "  console.log('SafeApp: Bridge Injected Successfully'); " +
                     "})();", null);
@@ -198,6 +203,7 @@ public class MainActivity extends BridgeActivity {
         public void showNotification(String title, String body) {
             NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(MainActivity.NOTIFICATION_SERVICE);
             String channelId = "SafeAppWebNotifications";
+            String groupKey = "com.dalvi.safe.MESSAGES_" + title.replaceAll("[^a-zA-Z0-9]", "");
             
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 NotificationChannel channel = new NotificationChannel(channelId, "Web Notifications", NotificationManager.IMPORTANCE_HIGH);
@@ -214,8 +220,9 @@ public class MainActivity extends BridgeActivity {
                     .setContentText(body)
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setCategory(NotificationCompat.CATEGORY_CALL)
-                    .setAutoCancel(true);
+                    .setCategory(isCall ? NotificationCompat.CATEGORY_CALL : NotificationCompat.CATEGORY_MESSAGE)
+                    .setAutoCancel(true)
+                    .setGroup(groupKey);
 
             if (isCall) {
                 Intent fullScreenIntent = new Intent(mContext, IncomingCallActivity.class);
@@ -228,11 +235,21 @@ public class MainActivity extends BridgeActivity {
                 builder.setFullScreenIntent(fullScreenPendingIntent, true)
                        .setOngoing(true);
                        
-                // Also start activity directly for reliability when app is foregrounded
                 mContext.startActivity(fullScreenIntent);
             }
 
-            notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+            // Use a stable ID for the same user/title to trigger grouping/updates correctly
+            int notificationId = Math.abs(title.hashCode());
+            notificationManager.notify(notificationId, builder.build());
+            
+            // Send a Summary notification for the group to ensure proper collapsing
+            Notification summaryNotification = new NotificationCompat.Builder(mContext, channelId)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setGroup(groupKey)
+                    .setGroupSummary(true)
+                    .setAutoCancel(true)
+                    .build();
+            notificationManager.notify(Math.abs(groupKey.hashCode()), summaryNotification);
         }
     }
 
