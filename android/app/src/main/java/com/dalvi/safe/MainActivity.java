@@ -43,10 +43,9 @@ public class MainActivity extends BridgeActivity {
             }
         });
 
-        // Setup User Agent for Talk compatibility
+        // Setup User Agent for Talk compatibility - Using modern Chrome Mobile UA
         WebSettings settings = webView.getSettings();
-        String originalUserAgent = settings.getUserAgentString();
-        settings.setUserAgentString(originalUserAgent + " Mobile Safari/537.36 (SafeApp; Android)");
+        settings.setUserAgentString("Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36");
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
         if (bottomNav != null) {
