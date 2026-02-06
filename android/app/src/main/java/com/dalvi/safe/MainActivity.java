@@ -100,6 +100,16 @@ public class MainActivity extends BridgeActivity {
         } else {
             startService(serviceIntent);
         }
+
+        // Request battery optimization exemption
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(android.content.Context.POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            }
+        }
     }
 
     @Override
@@ -290,13 +300,31 @@ public class MainActivity extends BridgeActivity {
                     .setContentTitle(title)
                     .setContentText(body)
                     .setSmallIcon(R.mipmap.ic_launcher)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setPriority(NotificationCompat.PRIORITY_MAX) // MAX for Heads-Up
                     .setCategory(isCall ? NotificationCompat.CATEGORY_CALL : NotificationCompat.CATEGORY_MESSAGE)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setAutoCancel(true)
                     .setGroup(groupKey)
                     .setDefaults(Notification.DEFAULT_ALL);
 
             if (isCall) {
+                // Answer Action
+                Intent answerIntent = new Intent(context, MainActivity.class);
+                answerIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                answerIntent.putExtra("SWITCH_TO_TALK", true);
+                PendingIntent answerPendingIntent = PendingIntent.getActivity(context, 1, 
+                        answerIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+                // Decline Action (just dismiss)
+                Intent declineIntent = new Intent(context, AppKeepAliveService.class); // Use a service to just handle dismissal
+                declineIntent.setAction("DECLINE_CALL");
+                PendingIntent declinePendingIntent = PendingIntent.getService(context, 2, 
+                        declineIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+                builder.addAction(R.mipmap.ic_launcher, "Answer", answerPendingIntent)
+                       .addAction(R.mipmap.ic_launcher, "Decline", declinePendingIntent);
+
+                // Full screen intent for lockscreen
                 Intent fullScreenIntent = new Intent(context, IncomingCallActivity.class);
                 fullScreenIntent.putExtra("CALLER_NAME", body.replace(" would like to talk with you", ""));
                 fullScreenIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);

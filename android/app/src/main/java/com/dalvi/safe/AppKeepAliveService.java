@@ -21,6 +21,12 @@ public class AppKeepAliveService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null && "DECLINE_CALL".equals(intent.getAction())) {
+            NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            manager.cancelAll(); // Or target specific ID if known, but this is safe for a decline
+            return START_NOT_STICKY;
+        }
+
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 
                 PendingIntent.FLAG_IMMUTABLE);
