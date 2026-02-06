@@ -139,7 +139,8 @@ public class MainActivity extends BridgeActivity {
         WebView currentWebView = webViews.get(currentTabId);
 
         if (currentWebView != null) {
-            currentWebView.setVisibility(android.view.View.GONE);
+            // Keep it VISIBLE but move it way off-screen to prevent JS throttling
+            currentWebView.setTranslationX(10000); 
         }
 
         if (nextWebView == null) {
@@ -156,16 +157,24 @@ public class MainActivity extends BridgeActivity {
             container.addView(nextWebView);
             
             String url = getUrlForId(id);
+            android.webkit.CookieManager.getInstance().flush();
             nextWebView.loadUrl(url);
             
             webViews.put(id, nextWebView);
         }
 
+        nextWebView.setTranslationX(0);
         nextWebView.setVisibility(android.view.View.VISIBLE);
         currentTabId = id;
     }
 
     private void configureWebView(WebView webView) {
+        if (webView == null) return;
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
+        
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -233,13 +242,13 @@ public class MainActivity extends BridgeActivity {
     }
 
     private static class WebAppInterface {
-        private java.lang.ref.WeakReference<android.content.Context> mContext;
+        private android.content.Context mContext;
         WebAppInterface(android.content.Context c) {
-            mContext = new java.lang.ref.WeakReference<>(c);
+            mContext = c.getApplicationContext();
         }
 
         private android.content.Context getContext() {
-            return mContext.get();
+            return mContext;
         }
 
         @android.webkit.JavascriptInterface
@@ -268,7 +277,8 @@ public class MainActivity extends BridgeActivity {
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setCategory(isCall ? NotificationCompat.CATEGORY_CALL : NotificationCompat.CATEGORY_MESSAGE)
                     .setAutoCancel(true)
-                    .setGroup(groupKey);
+                    .setGroup(groupKey)
+                    .setDefaults(Notification.DEFAULT_ALL);
 
             if (isCall) {
                 Intent fullScreenIntent = new Intent(context, IncomingCallActivity.class);
@@ -284,10 +294,14 @@ public class MainActivity extends BridgeActivity {
                 context.startActivity(fullScreenIntent);
             }
 
-            int notificationId = Math.abs(title.hashCode());
+            // Always notify with a unique ID to ensure it "pings", 
+            // but use the same groupKey so Android merges them in the shade.
+            int notificationId = (int) System.currentTimeMillis();
             notificationManager.notify(notificationId, builder.build());
             
+            // Re-send summary to ensure the group exists
             Notification summaryNotification = new NotificationCompat.Builder(context, channelId)
+                    .setContentTitle(title)
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setGroup(groupKey)
                     .setGroupSummary(true)
