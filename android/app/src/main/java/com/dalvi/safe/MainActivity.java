@@ -184,6 +184,13 @@ public class MainActivity extends BridgeActivity {
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         webView.setNetworkAvailable(true);
         
+        // PWA-style scaling and viewport fixes
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setTextZoom(100); // Prevents system accessibility scaling from breaking UI
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        
         // Add native bridge
         webView.addJavascriptInterface(new WebAppInterface(this), "AndroidBridge");
         
@@ -227,6 +234,15 @@ public class MainActivity extends BridgeActivity {
                     "  }, 5000); " +
                     "  window.SafeAppBridgeInjected = true; " +
                     "  console.log('SafeApp: Bridge Injected Successfully'); " +
+                    "  /* Specific CSS fixes for Nextcloud Talk PWA look */ " +
+                    "  const style = document.createElement('style'); " +
+                    "  style.innerHTML = ` " +
+                    "    .message .timestamp, .message .message-info { font-size: 0.75rem !important; transform-origin: left; } " +
+                    "    .message-row .timestamp { font-size: 10px !important; } " +
+                    "    /* Ensure viewport is correct for PWA look */ " +
+                    "    @viewport { width: device-width; } " +
+                    "  `; " +
+                    "  document.head.appendChild(style); " +
                     "})();", null);
             }
 
