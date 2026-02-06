@@ -24,20 +24,22 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        WebView primaryWebView = getBridge().getWebView();
-        
-        // Remove WebView from its current parent and add it to our container
-        ViewGroup parent = (ViewGroup) primaryWebView.getParent();
-        if (parent != null) {
-            parent.removeView(primaryWebView);
+        WebView primaryWebView = getBridge() != null ? getBridge().getWebView() : null;
+        if (primaryWebView != null) {
+            // Remove WebView from its current parent and add it to our container
+            ViewGroup parent = (ViewGroup) primaryWebView.getParent();
+            if (parent != null) {
+                parent.removeView(primaryWebView);
+            }
+            
+            FrameLayout container = findViewById(R.id.webview_container);
+            if (container != null) {
+                container.addView(primaryWebView);
+                primaryWebView.getSettings().setUserAgentString(userAgent);
+                // Store primary WebView (Home tab)
+                webViews.put(R.id.navigation_home, primaryWebView);
+            }
         }
-        
-        FrameLayout container = findViewById(R.id.webview_container);
-        container.addView(primaryWebView);
-        primaryWebView.getSettings().setUserAgentString(userAgent);
-
-        // Store primary WebView (Home tab)
-        webViews.put(R.id.navigation_home, primaryWebView);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
         if (bottomNav != null) {
@@ -99,7 +101,7 @@ public class MainActivity extends BridgeActivity {
         settings.setUserAgentString(userAgent);
         
         // Add native bridge
-        webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
+        webView.addJavascriptInterface(new WebAppInterface(this), "AndroidBridge");
         
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -133,10 +135,15 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
-    public class WebAppInterface {
+    private static class WebAppInterface {
+        private android.content.Context mContext;
+        WebAppInterface(android.content.Context c) {
+            mContext = c;
+        }
+
         @android.webkit.JavascriptInterface
         public void showNotification(String title, String body) {
-            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(MainActivity.NOTIFICATION_SERVICE);
             String channelId = "SafeAppWebNotifications";
             
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -144,7 +151,7 @@ public class MainActivity extends BridgeActivity {
                 notificationManager.createNotificationChannel(channel);
             }
 
-            Notification notification = new NotificationCompat.Builder(MainActivity.this, channelId)
+            Notification notification = new NotificationCompat.Builder(mContext, channelId)
                     .setContentTitle(title)
                     .setContentText(body)
                     .setSmallIcon(R.mipmap.ic_launcher)
@@ -155,10 +162,10 @@ public class MainActivity extends BridgeActivity {
             
             // If it's a call, trigger the call UI
             if (title.toLowerCase().contains("call") || body.toLowerCase().contains("incoming call")) {
-                Intent intent = new Intent(MainActivity.this, IncomingCallActivity.class);
+                Intent intent = new Intent(mContext, IncomingCallActivity.class);
                 intent.putExtra("CALLER_NAME", title);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
+                mContext.startActivity(intent);
             }
         }
     }
