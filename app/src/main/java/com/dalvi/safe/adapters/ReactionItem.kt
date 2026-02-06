@@ -1,0 +1,11 @@
+/*
+ * Safe App - Android Client
+ *
+ * SPDX-FileCopyrightText: 2022 Andy Scherzinger <info@andy-scherzinger.de>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+package com.dalvi.safe.adapters
+
+import com.dalvi.safe.models.json.reactions.ReactionVoter
+
+data class ReactionItem(val reactionVoter: ReactionVoter, val reaction: String?)

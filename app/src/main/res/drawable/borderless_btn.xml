@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Safe App - Android Client
+  ~
+  ~ SPDX-FileCopyrightText: 2017-2024 Safe App GmbH and Safe App contributors
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:color="@color/disabled_text" android:state_enabled="false" />
+
+    <item android:color="@color/colorAccent" />
+
+</selector>
