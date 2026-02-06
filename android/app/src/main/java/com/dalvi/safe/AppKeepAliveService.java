@@ -30,6 +30,8 @@ public class AppKeepAliveService extends Service {
                 .setContentText("Listening for messages and calls...")
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setVisibility(NotificationCompat.VISIBILITY_SECRET)
                 .build();
 
         startForeground(1, notification);
@@ -41,7 +43,7 @@ public class AppKeepAliveService extends Service {
             NotificationChannel serviceChannel = new NotificationChannel(
                     CHANNEL_ID,
                     "Safe App Persistence",
-                    NotificationManager.IMPORTANCE_LOW
+                    NotificationManager.IMPORTANCE_MIN
             );
             NotificationManager manager = getSystemService(NotificationManager.class);
             manager.createNotificationChannel(serviceChannel);
