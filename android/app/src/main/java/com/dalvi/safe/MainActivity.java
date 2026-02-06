@@ -85,8 +85,11 @@ public class MainActivity extends BridgeActivity {
             requestPermissions(permissions, 101);
         }
 
-        // Configure primary WebView
+        // Configure primary WebView (Home)
         configureWebView(primaryWebView);
+
+        // PRE-LOAD Talk tab in background to ensure call polling starts immediately
+        preLoadTab(R.id.navigation_talk);
 
         // Start persistence service
         Intent serviceIntent = new Intent(this, AppKeepAliveService.class);
@@ -94,6 +97,26 @@ public class MainActivity extends BridgeActivity {
             startForegroundService(serviceIntent);
         } else {
             startService(serviceIntent);
+        }
+    }
+
+    private void preLoadTab(int id) {
+        if (webViews.containsKey(id)) return;
+        
+        WebView webView = new WebView(this);
+        webView.setLayoutParams(new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+        webView.setVisibility(android.view.View.GONE); // Hide it
+        
+        configureWebView(webView);
+        
+        FrameLayout container = findViewById(R.id.webview_container);
+        if (container != null) {
+            container.addView(webView);
+            webView.loadUrl(getUrlForId(id));
+            webViews.put(id, webView);
         }
     }
 
